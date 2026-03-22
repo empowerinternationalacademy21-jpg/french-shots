@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>FrenchShots — Learn French through short videos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,400;0,600;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     NAVIGATION
+     ══════════════════════════════════════════ -->
+<nav class="nav">
+  <a class="nav-brand" href="/">French<em>Shots</em></a>
+
+  <div class="nav-right">
+    {% if user %}
+      <button class="btn-upload" id="open-upload-btn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <span>Upload</span>
+      </button>
+      <div class="user-pill">
+        {% if user.picture %}
+          <img class="user-avatar" src="{{ user.picture }}" alt="{{ user.name }}">
+        {% else %}
+          <div class="user-avatar-fallback">{{ (user.name or user.email)[0].upper() }}</div>
+        {% endif %}
+        <a href="{{ url_for('auth_logout') }}" class="btn-signout">Sign out</a>
+      </div>
+    {% else %}
+      <a href="{{ url_for('auth_login') }}" class="btn-google">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+        </svg>
+        Continue with Google
+      </a>
+    {% endif %}
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════════
+     FLASH MESSAGES
+     ══════════════════════════════════════════ -->
+{% with messages = get_flashed_messages(with_categories=True) %}
+  {% if messages %}
+    <div class="flash-stack">
+      {% for category, message in messages %}
+        <div class="flash {{ category }}">
+          <span>{{ message }}</span>
+          <button class="flash-close" type="button" aria-label="Dismiss">&times;</button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<!-- ══════════════════════════════════════════
+     VIDEO FEED
+     ══════════════════════════════════════════ -->
+{% if videos %}
+<div class="feed" id="feed">
+  {% for video in videos %}
+  <div class="shot" id="shot-{{ video.id }}">
+
+    <!-- Video -->
+    <video
+      class="shot-video"
+      src="{{ url_for('static', filename='uploads/videos/' + video.filename) }}"
+      loop
+      muted
+      playsinline
+      preload="metadata"
+    ></video>
+
+    <!-- Pause indicator -->
+    <div class="pause-indicator" id="indicator-{{ video.id }}"></div>
+
+    <!-- Bottom info bar -->
+    <div class="shot-info">
+      <div class="shot-meta">
+        <div class="shot-author">
+          {% if video.author.picture %}
+            <img class="shot-author-img" src="{{ video.author.picture }}" alt="{{ video.author.name }}">
+          {% else %}
+            <div class="shot-author-fallback">{{ (video.author.name or video.author.email)[0].upper() }}</div>
+          {% endif %}
+          <span class="shot-author-name">{{ video.author.name or video.author.email }}</span>
+        </div>
+
+        <div class="shot-title">{{ video.title }}</div>
+        {% if video.description %}
+          <div class="shot-desc">{{ video.description }}</div>
+        {% endif %}
+
+        <!-- Vocabulary button -->
+        <button
+          class="btn-vocab"
+          style="margin-top: 12px;"
+          onclick="openVocabDrawer({{ video.id }}, '{{ video.title | replace("'", "\\'") }}')"
+          type="button"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/>
+          </svg>
+          Reveal vocabulary
+        </button>
+      </div>
+
+      <!-- Right actions -->
+      <div class="shot-actions">
+        <!-- Like -->
+        <button
+          class="action-btn like-btn {% if user and video.is_liked_by(user.id) %}liked{% endif %}"
+          data-video-id="{{ video.id }}"
+          type="button"
+          aria-label="Like"
+        >
+          <div class="action-icon">
+            <svg viewBox="0 0 24 24" fill="{% if user and video.is_liked_by(user.id) %}#CDA0A0{% else %}none{% endif %}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
+            </svg>
+          </div>
+          <span class="action-count">{{ video.like_count() }}</span>
+        </button>
+
+        <!-- Share (decorative) -->
+        <button class="action-btn" type="button" aria-label="Share">
+          <div class="action-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+            </svg>
+          </div>
+          <span class="action-count">Share</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+  {% endfor %}
+</div>
+
+{% else %}
+<!-- Empty state -->
+<div class="empty-feed">
+  <div class="empty-feed-title">No shots yet.</div>
+  <div class="empty-feed-sub">
+    {% if user %}
+      Be the first to upload a French clip. Use the Upload button above.
+    {% else %}
+      Sign in with Google to upload the first French shot.
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+
+<!-- ══════════════════════════════════════════
+     VOCABULARY DRAWER
+     ══════════════════════════════════════════ -->
+<div class="vocab-overlay" id="vocab-overlay"></div>
+<div class="vocab-drawer" id="vocab-drawer" role="dialog" aria-label="Vocabulary breakdown">
+  <div class="vocab-drawer-handle"></div>
+  <div class="vocab-drawer-header">
+    <div>
+      <div class="vocab-drawer-title" id="vocab-video-title">Vocabulary</div>
+      <div class="vocab-drawer-subtitle">Words from this shot — explained in English</div>
+    </div>
+    <button class="vocab-close" id="vocab-close" type="button" aria-label="Close">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+  <div class="vocab-scroll">
+    <div id="vocab-list"></div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     UPLOAD MODAL
+     ══════════════════════════════════════════ -->
+{% if user %}
+<div class="modal-overlay" id="upload-overlay">
+  <div class="modal" id="upload-modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">Upload a Shot</div>
+        <div class="modal-sub">French video — vocabulary generated automatically</div>
+      </div>
+      <button class="modal-close" id="upload-close" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <form id="upload-form" action="{{ url_for('upload_video') }}" method="POST" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="form-group">
+        <label class="form-label" for="title">Title</label>
+        <input class="form-input" type="text" id="title" name="title" placeholder="e.g. Morning at the boulangerie" maxlength="200">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="description">Description <span style="color:var(--tx3);font-weight:400;text-transform:none;letter-spacing:0">(helps AI generate better vocabulary)</span></label>
+        <textarea class="form-textarea" id="description" name="description" rows="2" placeholder="Describe what happens in the video…" maxlength="500"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Video file</label>
+        <div class="drop-zone" id="drop-zone">
+          <input type="file" id="video-file-input" name="video" accept="video/mp4,video/quicktime,video/webm,video/x-matroska" required>
+          <div class="drop-zone-text">
+            <strong>Drop your video here or click to browse</strong>
+            MP4, MOV, WebM — max 200 MB
+          </div>
+          <div class="drop-zone-preview" id="file-preview" style="display:none"></div>
+        </div>
+      </div>
+
+      <button class="btn-submit" type="submit">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Upload &amp; generate vocabulary
+      </button>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
