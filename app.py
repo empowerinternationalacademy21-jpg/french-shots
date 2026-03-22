@@ -26,8 +26,8 @@ def create_app():
     app = Flask(__name__)
 
     # ── Config ──────────────────────────────────────────────
-    app.config["SECRET_KEY"]              = os.environ.get("SECRET_KEY", "frenchshots-dev-secret")
-    app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///frenchshots.db")
+    app.config["SECRET_KEY"]              = os.environ["SECRET_KEY"]
+    app.config["SQLALCHEMY_DATABASE_URI"] = os.environ["DATABASE_URL"]
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["UPLOAD_FOLDER"]           = os.path.join("static", "uploads", "videos")
     app.config["MAX_CONTENT_LENGTH"]      = 200 * 1024 * 1024   # 200 MB
@@ -40,12 +40,12 @@ def create_app():
     os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
     # ── OAuth / Google ───────────────────────────────────────
-    app.config["GOOGLE_CLIENT_ID"]     = os.environ.get("GOOGLE_CLIENT_ID",     "YOUR_GOOGLE_CLIENT_ID")
-    app.config["GOOGLE_CLIENT_SECRET"] = os.environ.get("GOOGLE_CLIENT_SECRET", "YOUR_GOOGLE_CLIENT_SECRET")
+    app.config["GOOGLE_CLIENT_ID"]     = os.environ["GOOGLE_CLIENT_ID"]
+    app.config["GOOGLE_CLIENT_SECRET"] = os.environ["GOOGLE_CLIENT_SECRET"]
 
     # ── Gemini ───────────────────────────────────────────────
-    gemini_key  = os.environ.get("GEMINI_API_KEY", "")
-    genai_client = genai.Client(api_key=gemini_key) if gemini_key else None
+    gemini_key   = os.environ["GEMINI_API_KEY"]
+    genai_client = genai.Client(api_key=gemini_key)
 
     # ── Extensions ───────────────────────────────────────────
     db.init_app(app)
@@ -111,8 +111,6 @@ def create_app():
 
     def generate_vocab(video_title: str, video_description: str) -> list:
         """Call Gemini and return a list of vocab dicts."""
-        if not genai_client:
-            return []
         try:
             full_prompt = (
                 VOCAB_SYSTEM
