@@ -1,0 +1,36 @@
+# Environment variables — NEVER commit this
+.env
+.env.*
+
+# Flask session files
+.flask_session/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Uploaded videos (too large for GitHub)
+static/uploads/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
