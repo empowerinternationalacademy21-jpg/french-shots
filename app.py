@@ -26,8 +26,12 @@ def create_app():
     app = Flask(__name__)
 
     # ── Config ──────────────────────────────────────────────
-    app.config["SECRET_KEY"]              = os.environ["SECRET_KEY"]
-    app.config["SQLALCHEMY_DATABASE_URI"] = os.environ["DATABASE_URL"]
+    app.config["SECRET_KEY"] = os.environ["SECRET_KEY"]
+
+    # Fix Render's postgres:// to postgresql:// for SQLAlchemy
+    db_url = os.environ["DATABASE_URL"].replace("postgres://", "postgresql://", 1)
+    app.config["SQLALCHEMY_DATABASE_URI"] = db_url
+
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["UPLOAD_FOLDER"]           = os.path.join("static", "uploads", "videos")
     app.config["MAX_CONTENT_LENGTH"]      = 200 * 1024 * 1024   # 200 MB
@@ -136,6 +140,9 @@ def create_app():
 
     @app.route("/auth/login")
     def auth_login():
+        # url_for automatically builds the correct URL for local or Render:
+        # local  → http://localhost:5000/auth/callback
+        # Render → https://french-shots-2.onrender.com/auth/callback
         redirect_uri = url_for("auth_callback", _external=True)
         return google.authorize_redirect(redirect_uri)
 
